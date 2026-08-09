@@ -10,9 +10,24 @@ on:
   # també des del navegador del mòbil.
   workflow_dispatch:
 
+# Permisos necessaris perquè GitHub Pages pugui publicar
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si se'n llancen dues alhora, deixem que acabi la darrera
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   publicar:
     runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.desplegar.outputs.page_url }}
 
     steps:
       - name: Descarregar el codi
@@ -45,12 +60,14 @@ jobs:
           echo "Mida: $(du -h sortida/index.html | cut -f1)"
           echo "Cartells: $(ls sortida/imatges 2>/dev/null | wc -l)"
 
-      - name: Publicar al hosting per FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Preparar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Empaquetar els fitxers
+        uses: actions/upload-pages-artifact@v3
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ${{ secrets.FTP_PROTOCOL }}
-          local-dir: ./sortida/
-          server-dir: ${{ secrets.FTP_DESTI }}
+          path: ./sortida
+
+      - name: Desplegar a GitHub Pages
+        id: desplegar
+        uses: actions/deploy-pages@v4
