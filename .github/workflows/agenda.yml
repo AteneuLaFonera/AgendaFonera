@@ -12,7 +12,7 @@ on:
 
 # Permisos necessaris perquè GitHub Pages pugui publicar
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -71,3 +71,11 @@ jobs:
       - name: Desplegar a GitHub Pages
         id: desplegar
         uses: actions/deploy-pages@v4
+
+      # GitHub desactiva les tasques programades si el repositori passa 60 dies
+      # sense cap commit. Aquest pas fa un commit insignificant quan s'acosta
+      # el termini, perquè l'agenda no s'aturi sola.
+      - name: Evitar la desactivació per inactivitat
+        uses: gautamkrishnar/keepalive-workflow@v2
+        with:
+          time_elapsed: 45
