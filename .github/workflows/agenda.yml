@@ -35,8 +35,15 @@ jobs:
       - name: Comprovar que s'ha generat correctament
         run: |
           test -f sortida/index.html || { echo "No s'ha generat l'index.html"; exit 1; }
-          echo "Mida del fitxer: $(du -h sortida/index.html | cut -f1)"
-          echo "Cartells descarregats: $(ls sortida/imatges 2>/dev/null | wc -l)"
+          # Aturem la publicació si el fitxer és sospitosament petit,
+          # per no substituir una agenda bona per una de trencada.
+          mida=$(stat -c%s sortida/index.html)
+          if [ "$mida" -lt 50000 ]; then
+            echo "L'index.html fa només $mida bytes: sembla incomplet. No es publica."
+            exit 1
+          fi
+          echo "Mida: $(du -h sortida/index.html | cut -f1)"
+          echo "Cartells: $(ls sortida/imatges 2>/dev/null | wc -l)"
 
       - name: Publicar al hosting per FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -44,5 +51,6 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ secrets.FTP_PROTOCOL }}
           local-dir: ./sortida/
           server-dir: ${{ secrets.FTP_DESTI }}
