@@ -1,0 +1,48 @@
+name: Generar i publicar l'agenda
+
+on:
+  # Cada dia a les 05:30 (hora peninsular a l'estiu).
+  # El cron de GitHub va en UTC, per això hi posem 03:30.
+  schedule:
+    - cron: "30 3 * * *"
+
+  # Permet executar-ho a mà des de la pestanya "Actions" de GitHub,
+  # també des del navegador del mòbil.
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descarregar el codi
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instal·lar dependències
+        run: pip install -r requirements.txt
+
+      - name: Generar l'agenda
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
+        run: python generar_agenda.py
+
+      - name: Comprovar que s'ha generat correctament
+        run: |
+          test -f sortida/index.html || { echo "No s'ha generat l'index.html"; exit 1; }
+          echo "Mida del fitxer: $(du -h sortida/index.html | cut -f1)"
+          echo "Cartells descarregats: $(ls sortida/imatges 2>/dev/null | wc -l)"
+
+      - name: Publicar al hosting per FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./sortida/
+          server-dir: ${{ secrets.FTP_DESTI }}
