@@ -1,0 +1,11 @@
+# Credencials: no s'han de pujar mai al repositori
+config_local.py
+
+# Entorn virtual
+venv/
+__pycache__/
+*.pyc
+
+# Resultat generat (es regenera sol a cada execució)
+sortida/
+imatges_prova/
