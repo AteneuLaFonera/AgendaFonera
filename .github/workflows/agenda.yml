@@ -76,6 +76,19 @@ jobs:
       # sense cap commit. Aquest pas fa un commit insignificant quan s'acosta
       # el termini, perquè l'agenda no s'aturi sola.
       - name: Evitar la desactivació per inactivitat
-        uses: gautamkrishnar/keepalive-workflow@v2
-        with:
-          time_elapsed: 45
+        run: |
+          ultim=$(git log -1 --format=%ct)
+          ara=$(date +%s)
+          dies=$(( (ara - ultim) / 86400 ))
+          echo "Dies des del darrer commit: $dies"
+          if [ "$dies" -ge 45 ]; then
+            echo "S'acosta el límit dels 60 dies: fem un commit de manteniment."
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            date -u +"%Y-%m-%d %H:%M UTC" > .github/darrera-activitat.txt
+            git add .github/darrera-activitat.txt
+            git commit -m "Manteniment automatic: mantenir activa la tasca programada"
+            git push
+          else
+            echo "Encara queda marge, no cal fer res."
+          fi
