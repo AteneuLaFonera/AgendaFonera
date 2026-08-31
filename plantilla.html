@@ -371,7 +371,9 @@ body{
 }
 .m-row{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--ink);}
 .m-row svg{width:15px;height:15px;flex-shrink:0;color:var(--ink-3);}
-.m-desc{font-size:14.5px;line-height:1.65;color:var(--ink-2);margin:0;white-space:pre-line;}
+.m-desc{font-size:14.5px;line-height:1.65;color:var(--ink-2);margin:0;white-space:pre-line;word-break:break-word;}
+.m-desc a{color:var(--fucsia-deep);font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+.m-desc a:hover{color:var(--fucsia);}
 
 @media(max-width:820px){
   .modal{flex-direction:column;max-width:440px;}
@@ -581,6 +583,29 @@ function render(){
 const ov=document.getElementById('overlay');
 let lastFocus=null;
 
+function escapeHtml(text){
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function linkify(text){
+  // Detecta URLs (amb http/https o que comencen per www.) i les converteix
+  // en enllaços clicables. El text ja ha de venir escapat prèviament.
+  const urlRe = /((https?:\/\/|www\.)[^\s<]+)/gi;
+  return text.replace(urlRe, (match)=>{
+    // no incloem puntuació final (. , ) etc.) dins l'enllaç
+    let url = match;
+    let cua = '';
+    while (url.length && /[.,;:!?)\]]$/.test(url)){
+      cua = url.slice(-1) + cua;
+      url = url.slice(0, -1);
+    }
+    const href = url.startsWith('http') ? url : 'https://' + url;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>${cua}`;
+  });
+}
+
 function open(ev){
   lastFocus=document.activeElement;
   const [y,m,d]=ev.date.split('-').map(Number);
@@ -594,7 +619,7 @@ function open(ev){
   meta.innerHTML=`<div class="m-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>${ev.time}</div>`
     + (ev.place?`<div class="m-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${ev.place}</div>`:'');
 
-  document.getElementById('mdDesc').textContent=ev.desc||'';
+  document.getElementById('mdDesc').innerHTML=linkify(escapeHtml(ev.desc||''));
 
   const p=document.getElementById('mdPoster');
   if(ev.poster){p.innerHTML=`<img src="${ev.poster}" alt="Cartell de ${ev.title}">`;}
